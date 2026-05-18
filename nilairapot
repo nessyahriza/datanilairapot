@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Nilai Raport</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes countUp { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        .fade-up { animation: fadeUp 0.5s ease forwards; }
+        .count-anim { animation: countUp 0.4s ease forwards; }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 25px -5px rgba(109, 40, 217, 0.15), 0 8px 10px -6px rgba(109, 40, 217, 0.1); }
+        
+        /* Custom scrollbar for table */
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 flex flex-col">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-white border-b border-purple-100 shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-200">
+                        <i data-lucide="graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-800 bg-gradient-to-r from-blue-700 to-purple-700 bg-clip-text text-transparent leading-tight">EduDash</h1>
+                        <p class="text-[10px] font-600 text-purple-400 uppercase tracking-wider">Sistem Informasi Akademik</p>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button onclick="fetchData()" id="refresh-btn" class="flex items-center gap-2 text-sm font-600 text-purple-600 bg-purple-50 hover:bg-purple-100 px-4 py-2 rounded-lg transition-colors">
+                        <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+                        <span class="hidden sm:inline">Sinkronisasi</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 overflow-auto">
+        
+        <!-- Header Section -->
+        <header class="mb-8 fade-up flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+                <h2 class="text-2xl md:text-3xl font-800 text-slate-800 mb-2">Laporan Nilai Raport</h2>
+                <p class="text-slate-500 text-sm flex items-center gap-2">
+                    <i data-lucide="calendar" class="w-4 h-4"></i> Tahun Ajaran Berjalan
+                    <span id="sync-status" class="ml-2 px-2 py-0.5 rounded text-xs font-500 bg-blue-100 text-blue-700">Terhubung</span>
+                </p>
+            </div>
+        </header>
+
+        <!-- Stats Badges -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+            <!-- Badge: Total Siswa -->
+            <div class="bg-white rounded-2xl p-5 border border-purple-100 shadow-sm card-hover fade-up relative overflow-hidden group" style="animation-delay:0.1s">
+                <div class="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="users" class="w-24 h-24 text-purple-600"></i>
+                </div>
+                <div class="relative z-10 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl flex items-center justify-center border border-purple-200">
+                        <i data-lucide="users" class="w-6 h-6 text-purple-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500 font-600 uppercase tracking-wide">Jumlah Siswa</p>
+                        <p id="stat-total" class="text-3xl font-800 text-slate-800 count-anim">0</p>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-purple-500 to-purple-400 w-full"></div>
+            </div>
+
+            <!-- Badge: Laki-laki -->
+            <div class="bg-white rounded-2xl p-5 border border-blue-100 shadow-sm card-hover fade-up relative overflow-hidden group" style="animation-delay:0.15s">
+                <div class="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="user" class="w-24 h-24 text-blue-600"></i>
+                </div>
+                <div class="relative z-10 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl flex items-center justify-center border border-blue-200">
+                        <i data-lucide="user" class="w-6 h-6 text-blue-600"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500 font-600 uppercase tracking-wide">Laki-laki</p>
+                        <p id="stat-male" class="text-3xl font-800 text-slate-800 count-anim">0</p>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-blue-400 w-full"></div>
+            </div>
+
+            <!-- Badge: Perempuan -->
+            <div class="bg-white rounded-2xl p-5 border border-pink-100 shadow-sm card-hover fade-up relative overflow-hidden group" style="animation-delay:0.2s">
+                <div class="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="user" class="w-24 h-24 text-pink-500"></i>
+                </div>
+                <div class="relative z-10 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-pink-100 to-pink-50 rounded-xl flex items-center justify-center border border-pink-200">
+                        <i data-lucide="user" class="w-6 h-6 text-pink-500"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500 font-600 uppercase tracking-wide">Perempuan</p>
+                        <p id="stat-female" class="text-3xl font-800 text-slate-800 count-anim">0</p>
+                    </div>
+                </div>
+                <div class="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-pink-500 to-pink-400 w-full"></div>
+            </div>
+        </div>
+
+        <!-- Average Bar -->
+        <div class="mb-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-5 text-white shadow-lg shadow-purple-200 fade-up flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden" style="animation-delay:0.25s">
+            <div class="absolute right-0 top-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+            <div class="flex items-center gap-3 relative z-10">
+                <div class="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-blue-100 font-500">Performa Akademik</p>
+                    <h3 class="font-700 text-lg">Rata-rata Kelas Keseluruhan</h3>
+                </div>
+            </div>
+            <div class="relative z-10 bg-white/10 px-6 py-2 rounded-xl backdrop-blur-sm border border-white/20">
+                <span id="stat-avg" class="text-3xl font-800 tracking-tight">-</span>
+            </div>
+        </div>
+
+        <!-- Toolbar / Filters -->
+        <div class="bg-white rounded-2xl p-4 border border-purple-100 shadow-sm mb-6 fade-up" style="animation-delay:0.3s">
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="flex-1 min-w-[200px] relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input id="search-input" type="text" placeholder="Cari nama siswa..." class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-slate-50 focus:bg-white" oninput="applyFilters()">
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <select id="filter-gender" class="flex-1 md:flex-none border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-500 text-slate-600" onchange="applyFilters()">
+                        <option value="">Semua Gender</option>
+                        <option value="L">Laki-laki</option>
+                        <option value="P">Perempuan</option>
+                    </select>
+                    <select id="filter-class" class="flex-1 md:flex-none border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-500 text-slate-600" onchange="applyFilters()">
+                        <option value="">Semua Kelas</option>
+                    </select>
+                    <select id="sort-select" class="flex-1 md:flex-none border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-500 text-slate-600" onchange="applyFilters()">
+                        <option value="">Urutan Default</option>
+                        <option value="desc">Rata-rata Tertinggi</option>
+                        <option value="asc">Rata-rata Terendah</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Data -->
+        <div class="bg-white rounded-2xl border border-purple-100 shadow-sm overflow-hidden fade-up" style="animation-delay:0.35s">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gradient-to-r from-slate-50 to-purple-50 text-slate-600 border-b border-purple-100">
+                        <tr>
+                            <th class="px-5 py-4 font-700 w-16">No</th>
+                            <th class="px-5 py-4 font-700">Nama Lengkap</th>
+                            <th class="px-5 py-4 font-700 text-center">JK</th>
+                            <th class="px-5 py-4 font-700 text-center">Kelas</th>
+                            <th class="px-5 py-4 font-700 text-center">MTK</th>
+                            <th class="px-5 py-4 font-700 text-center">B.Inggris</th>
+                            <th class="px-5 py-4 font-700 text-center">B.Indo</th>
+                            <th class="px-5 py-4 font-700 text-center">Fisika</th>
+                            <th class="px-5 py-4 font-700 text-center">Biologi</th>
+                            <th class="px-5 py-4 font-700 text-center">Rata-rata</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-slate-100">
+                        <!-- Content will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination Section -->
+            <div id="pagination" class="flex items-center justify-between px-5 py-4 bg-slate-50/50 border-t border-purple-100"></div>
+        </div>
+
+    </main>
+
+<script>
+// --- KONFIGURASI APLIKASI FINAL ---
+const APP_CONFIG = {
+    SPREADSHEET_ID: '1J90j0XJ8CtWzMhpF2FPUZpDPAeNRPlRa7--Ci4l_il8',
+    API_KEY: 'AIzaSyCHi-NTJACKB5HFWiNFNjGh7vGrDJyrn4Q'
+};
+
+let allStudents = [];
+let filteredStudents = [];
+let currentPage = 1;
+const perPage = 15;
+
+// Initialisasi Icons
+lucide.createIcons();
+
+// Auto load data on startup
+document.addEventListener("DOMContentLoaded", () => {
+    fetchData();
+});
+
+// Fetch data dari API Google Sheets
+async function fetchData() {
+    const tableBody = document.getElementById('table-body');
+    const refreshIcon = document.getElementById('refresh-icon');
+    const syncStatus = document.getElementById('sync-status');
+    
+    // Tampilkan state loading
+    refreshIcon.classList.add('animate-spin');
+    syncStatus.textContent = "Menyinkronkan...";
+    syncStatus.className = "ml-2 px-2 py-0.5 rounded text-xs font-500 bg-yellow-100 text-yellow-700";
+    
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="10" class="px-5 py-12 text-center">
+                <div class="flex flex-col items-center justify-center space-y-3">
+                    <i data-lucide="loader-2" class="w-8 h-8 text-purple-600 animate-spin"></i>
+                    <p class="text-slate-500 font-500">Menghubungkan ke database...</p>
+                </div>
+            </td>
+        </tr>
+    `;
+    lucide.createIcons();
+
+    try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${APP_CONFIG.SPREADSHEET_ID}/values/Sheet1?key=${APP_CONFIG.API_KEY}`;
+        const res = await fetch(url);
+        
+        if (!res.ok) throw new Error(`Gagal mengambil data (HTTP ${res.status})`);
+        
+        const data = await res.json();
+        const rows = data.values || [];
+
+        if (rows.length < 2) { 
+            throw new Error('Data sheet kosong atau format tidak sesuai'); 
+        }
+
+        // Parsing data (melewati baris pertama sebagai header)
+        allStudents = rows.slice(1).map((row, i) => {
+            const mtk = parseFloat(row[4]) || 0;
+            const bing = parseFloat(row[5]) || 0;
+            const bind = parseFloat(row[6]) || 0;
+            const fisika = parseFloat(row[7]) || 0;
+            const biologi = parseFloat(row[8]) || 0;
+            const avg = ((mtk + bing + bind + fisika + biologi) / 5).toFixed(1);
+
+            return {
+                no: row[0] || (i + 1),
+                nama: row[1] || '-',
+                jk: (row[2] || '').charAt(0).toUpperCase(),
+                kelas: row[3] || '-',
+                mtk, bing, bind, fisika, biologi, avg
+            };
+        });
+
+        // Filter valid data (Memiliki nama)
+        allStudents = allStudents.filter(s => s.nama !== '-');
+
+        // Status Sukses
+        syncStatus.textContent = "Terhubung";
+        syncStatus.className = "ml-2 px-2 py-0.5 rounded text-xs font-500 bg-green-100 text-green-700";
+        
+        populateFilters();
+        applyFilters();
+
+    } catch (error) {
+        console.error(error);
+        syncStatus.textContent = "Koneksi Gagal";
+        syncStatus.className = "ml-2 px-2 py-0.5 rounded text-xs font-500 bg-red-100 text-red-700";
+        
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="10" class="px-5 py-12 text-center">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                        <i data-lucide="alert-circle" class="w-8 h-8 text-red-500"></i>
+                        <p class="text-red-500 font-600">Gagal mengambil data</p>
+                        <p class="text-slate-400 text-sm">Pastikan pengaturan API Sheet benar atau muat ulang halaman.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        lucide.createIcons();
+    } finally {
+        setTimeout(() => {
+            refreshIcon.classList.remove('animate-spin');
+        }, 500);
+    }
+}
+
+// Populate dropdown class
+function populateFilters() {
+    const classes = [...new Set(allStudents.map(s => s.kelas))].filter(c => c && c !== '-').sort();
+    const sel = document.getElementById('filter-class');
+    sel.innerHTML = '<option value="">Semua Kelas</option>' + classes.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+// Handler filter, pencarian, dan pengurutan
+function applyFilters() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const gender = document.getElementById('filter-gender').value;
+    const kelas = document.getElementById('filter-class').value;
+    const sort = document.getElementById('sort-select').value;
+
+    filteredStudents = allStudents.filter(s => {
+        if (search && !s.nama.toLowerCase().includes(search)) return false;
+        if (gender && s.jk !== gender) return false;
+        if (kelas && s.kelas !== kelas) return false;
+        return true;
+    });
+
+    if (sort === 'desc') filteredStudents.sort((a, b) => b.avg - a.avg);
+    else if (sort === 'asc') filteredStudents.sort((a, b) => a.avg - b.avg);
+
+    currentPage = 1;
+    updateStats();
+    renderTable();
+}
+
+// Update statistik di badge
+function updateStats() {
+    const total = filteredStudents.length;
+    const male = filteredStudents.filter(s => s.jk === 'L').length;
+    const female = filteredStudents.filter(s => s.jk === 'P').length;
+    const avg = total > 0 ? (filteredStudents.reduce((sum, s) => sum + parseFloat(s.avg), 0) / total).toFixed(1) : '-';
+
+    animateCount('stat-total', total);
+    animateCount('stat-male', male);
+    animateCount('stat-female', female);
+    document.getElementById('stat-avg').textContent = avg;
+}
+
+// Animasi angka
+function animateCount(id, target) {
+    const el = document.getElementById(id);
+    let current = parseInt(el.textContent) || 0;
+    if(current === target) return;
+    
+    const step = Math.max(1, Math.ceil(Math.abs(target - current) / 15));
+    const interval = setInterval(() => {
+        if(current < target) {
+            current += step;
+            if(current >= target) { current = target; clearInterval(interval); }
+        } else {
+            current -= step;
+            if(current <= target) { current = target; clearInterval(interval); }
+        }
+        el.textContent = current;
+    }, 30);
+}
+
+// Helper untuk pewarnaan nilai
+function gradeColor(val) {
+    if (val >= 90) return 'text-green-600 font-700 bg-green-50/50 rounded-lg';
+    if (val >= 80) return 'text-blue-600 font-600';
+    if (val >= 70) return 'text-yellow-600 font-600';
+    return 'text-red-500 font-600 bg-red-50/50 rounded-lg';
+}
+
+// Merender tabel dengan pagination
+function renderTable() {
+    const tbody = document.getElementById('table-body');
+    
+    if(filteredStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-500">Tidak ada data siswa ditemukan.</td></tr>`;
+        document.getElementById('pagination').innerHTML = '';
+        return;
+    }
+
+    const start = (currentPage - 1) * perPage;
+    const page = filteredStudents.slice(start, start + perPage);
+
+    tbody.innerHTML = page.map((s, i) => `
+        <tr class="hover:bg-purple-50/40 transition-colors group">
+            <td class="px-5 py-3 text-slate-500">${start + i + 1}</td>
+            <td class="px-5 py-3 font-600 text-slate-800">${s.nama}</td>
+            <td class="px-5 py-3 text-center">
+                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-700 ${s.jk === 'L' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'}">
+                    ${s.jk === 'L' ? 'L' : 'P'}
+                </span>
+            </td>
+            <td class="px-5 py-3 text-center text-slate-600 font-500">${s.kelas}</td>
+            <td class="px-5 py-3 text-center ${gradeColor(s.mtk)}">${s.mtk}</td>
+            <td class="px-5 py-3 text-center ${gradeColor(s.bing)}">${s.bing}</td>
+            <td class="px-5 py-3 text-center ${gradeColor(s.bind)}">${s.bind}</td>
+            <td class="px-5 py-3 text-center ${gradeColor(s.fisika)}">${s.fisika}</td>
+            <td class="px-5 py-3 text-center ${gradeColor(s.biologi)}">${s.biologi}</td>
+            <td class="px-5 py-3 text-center">
+                <div class="px-3 py-1.5 rounded-lg text-sm font-800 border ${s.avg >= 85 ? 'border-green-200 bg-green-50 text-green-700' : (s.avg >= 75 ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-red-200 bg-red-50 text-red-700')} shadow-sm inline-block">
+                    ${s.avg}
+                </div>
+            </td>
+        </tr>
+    `).join('');
+
+    // Update Pagination UI
+    const totalPages = Math.ceil(filteredStudents.length / perPage);
+    const pag = document.getElementById('pagination');
+    
+    if (totalPages <= 1) { 
+        pag.innerHTML = `<span class="text-sm text-slate-500 font-500">Menampilkan ${filteredStudents.length} siswa</span>`; 
+        return; 
+    }
+    
+    pag.innerHTML = `
+        <span class="text-sm text-slate-500 font-500">
+            Halaman <span class="font-700 text-purple-600">${currentPage}</span> dari ${totalPages} 
+            <span class="ml-2 text-slate-400">(${filteredStudents.length} siswa)</span>
+        </span>
+        <div class="flex gap-2">
+            <button onclick="changePage(-1)" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-600 text-slate-600 hover:bg-white hover:text-purple-600 hover:border-purple-200 shadow-sm transition-all ${currentPage === 1 ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}">
+                <i data-lucide="chevron-left" class="w-4 h-4 inline-block mr-1"></i> Prev
+            </button>
+            <button onclick="changePage(1)" class="px-4 py-2 rounded-xl border border-slate-200 text-sm font-600 text-slate-600 hover:bg-white hover:text-purple-600 hover:border-purple-200 shadow-sm transition-all ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}">
+                Next <i data-lucide="chevron-right" class="w-4 h-4 inline-block ml-1"></i>
+            </button>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function changePage(dir) {
+    currentPage += dir;
+    renderTable();
+    // Scroll ke atas tabel
+    document.querySelector('table').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+</script>
+</body>
+</html>
